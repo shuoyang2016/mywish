@@ -1,0 +1,16 @@
+syntax = "proto3";
+package rpc;
+import "google/api/annotations.proto";
+
+message Product {
+    optional int64 id = 1;
+    optional string name = 2;
+    Buyer *user.Player
+	Brand string
+	DoubleConfirm bool
+	AcceptRatio int
+	SellerMinLevel uint
+	ExtraDescription string
+	BeginTime time.Time
+	LastDuration time.Duration
+}
