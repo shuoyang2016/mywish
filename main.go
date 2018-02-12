@@ -16,7 +16,7 @@ var _ server.Server
 var _ glog.Level
 
 var (
-	echoEndpoint = flag.String("echo_endpoint", "localhost:9090", "endpoint of YourService")
+	echoEndpoint = flag.String("echo_endpoint", "localhost:8083", "endpoint of YourService")
 )
 
 /*

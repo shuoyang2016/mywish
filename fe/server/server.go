@@ -10,6 +10,14 @@ import (
 	"fmt"
 	"github.com/shuoyang2016/mywish/auth"
 	"github.com/golang/glog"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"go.uber.org/zap"
 )
 
 func StartServer(port string) {
@@ -18,7 +26,24 @@ func StartServer(port string) {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_zap.StreamServerInterceptor(zap.New(nil)),
+			grpc_auth.StreamServerInterceptor(auth.AuthFunc),
+			grpc_recovery.StreamServerInterceptor(),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_zap.UnaryServerInterceptor(zap.New(nil)),
+			grpc_auth.UnaryServerInterceptor(auth.AuthFunc),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
+	)
 	serverIns, err := NewServer()
 	if err != nil {
 		log.Fatalf("failed to start server: %v", err)
@@ -67,6 +92,10 @@ func (s *Server) CheckOrCreateUser(ctx context.Context, req *rpcpb.CheckOrCreate
 	_ = ctx
 	response := rpcpb.CheckOrCreateUserResponse{}
 	err := s.Auth.CheckOrCreateUser(req.UserName, req.Password)
+	if err == auth.ErrUserNameExist {
+		response.Succeed = false
+		response.Details = fmt.Sprintf("The user name %v is already exist.", req.UserName)
+	}
 	return &response, err
 }
 

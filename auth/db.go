@@ -24,11 +24,12 @@ type UserSession struct {
 }
 
 func startDBConnection() (*gorm.DB, error) {
-	db, err := gorm.Open("mysql", "mywishtest:mywishtest@/mywishtest")
+	db, err := gorm.Open("mysql", "mywishtest:mywishtest@/mywishtest?parseTime=true")
 	if err != nil {
 		glog.Info("failed to connect database")
 		return nil, err
 	}
+	db.LogMode(true)
 	// Migrate the schema
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&UserSession{})
