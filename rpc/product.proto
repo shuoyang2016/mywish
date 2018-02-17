@@ -1,16 +1,44 @@
 syntax = "proto3";
 package rpc;
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 message Product {
-    optional int64 id = 1;
-    optional string name = 2;
-    Buyer *user.Player
-	Brand string
-	DoubleConfirm bool
-	AcceptRatio int
-	SellerMinLevel uint
-	ExtraDescription string
-	BeginTime time.Time
-	LastDuration time.Duration
+    enum Type {
+        NORMAL = 0;
+        VAGUE = 1;
+        SUPRISE = 2;
+    }
+    int64 id = 1;
+    string name = 2;
+    Type type = 3;
+    string brand = 4;
+    bool double_confirm = 5;
+    uint32 accept_ratio = 6;
+    uint32 seller_minlevel = 7;
+    string extra_description = 8;
+    google.protobuf.Timestamp begin_time = 9;
+    google.protobuf.Duration duration = 10;
+}
+
+message KVPair {
+    string key = 1;
+    bool bool_value = 2;
+    int64 int_value = 3;
+    bytes bytes_value = 4;
+}
+
+message SupriseProduct {
+    Product base = 1;
+    string usage = 2;
+    string function = 3;
+    repeated KVPair positive_filters = 4;
+    repeated KVPair negtive_filters = 5;
+}
+
+message VagueProduct {
+    Product base = 1;
+    string usage = 2;
+    string function = 3;
 }

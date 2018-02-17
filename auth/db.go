@@ -1,25 +1,26 @@
 package auth
 
 import (
+	"time"
+
+	"github.com/golang/glog"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"time"
-	"github.com/golang/glog"
 )
 
 type User struct {
 	gorm.Model
-	Username string
-	FullName string
-	PasswordHash []byte  // bcrypt password
-	IsDisabled bool
+	Username     string
+	FullName     string
+	PasswordHash []byte // bcrypt password
+	IsDisabled   bool
 }
 
 type UserSession struct {
 	gorm.Model
-	SessionKey string
-	UserID uint  // int not null, -- Could have a hard "references User"
-	LoginTime time.Time
+	SessionKey   string
+	UserID       uint // int not null, -- Could have a hard "references User"
+	LoginTime    time.Time
 	LastSeenTime time.Time
 }
 

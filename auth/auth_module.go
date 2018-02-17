@@ -2,11 +2,12 @@ package auth
 
 import (
 	"errors"
+
+	"github.com/golang/glog"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/golang/glog"
-	"google.golang.org/grpc"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var _ glog.Level
@@ -42,7 +43,7 @@ func (s *AuthModule) CheckOrCreateUser(userName string, password string) error {
 	if user.Username == userName {
 		return ErrUserNameExist
 	}
-	user_to_add := User{Username: userName, FullName: "", PasswordHash: []byte(password), IsDisabled:false}
+	user_to_add := User{Username: userName, FullName: "", PasswordHash: []byte(password), IsDisabled: false}
 	hash_pass, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return err

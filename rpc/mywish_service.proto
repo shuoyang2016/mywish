@@ -1,6 +1,12 @@
 syntax = "proto3";
 package rpc;
 import "google/api/annotations.proto";
+import "github.com/shuoyang2016/mywish/rpc/product.proto";
+
+enum Error {
+    SUCCESS = 0;
+    GENERIC_FAILURE = 1;
+}
 
 message GetProductRequest {
     string value = 1;
@@ -27,11 +33,13 @@ message BuyOutResponse {
 }
 
 message CreateProductRequest {
-
+    Product new_product = 1;
+    int64 user_id = 2;
 }
 
 message CreateProductResponse {
-
+    Error status = 1;
+    string msg = 2;
 }
 
 message GetProductsRequest {

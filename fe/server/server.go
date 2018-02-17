@@ -1,23 +1,27 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	rpcpb "github.com/shuoyang2016/mywish/rpc"
-	context "golang.org/x/net/context"
-	"fmt"
-	"github.com/shuoyang2016/mywish/auth"
+
 	"github.com/golang/glog"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/shuoyang2016/mywish/auth"
+	"github.com/shuoyang2016/mywish/db"
+	rpcpb "github.com/shuoyang2016/mywish/rpc"
 	"go.uber.org/zap"
+	context "golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 )
 
 func StartServer(port string) {
@@ -59,8 +63,9 @@ func StartServer(port string) {
 }
 
 type Server struct {
-	Auth *auth.AuthModule
-	stop chan struct{}
+	Auth  *auth.AuthModule
+	Mongo *db.MongoConnection
+	stop  chan struct{}
 }
 
 func NewServer() (*Server, error) {
@@ -72,18 +77,28 @@ func NewServer() (*Server, error) {
 		Auth: auth_module,
 		stop: make(chan struct{}),
 	}
+	mongoSession := db.StartMongoConnection("mywish_mongo", "")
+	server.Mongo = mongoSession
 	return &server, nil
 }
 
 func (s *Server) CreateProduct(ctx context.Context, req *rpcpb.CreateProductRequest) (*rpcpb.CreateProductResponse, error) {
-	log.Print(*req)
-	response := rpcpb.CreateProductResponse{}
-	return &response, nil
+	glog.V(3)
+	product := req.NewProduct
+	response := rpcpb.CreateProductResponse{Status: rpcpb.Error_SUCCESS}
+	if product.Id == 0 || product.Name == "" {
+		response.Status = rpcpb.Error_GENERIC_FAILURE
+		response.Msg = "Either ID or name of the product is empty"
+		return &response, status.Error(codes.InvalidArgument, "Either ID or name of the product is empty")
+	}
+	session := s.Mongo.BaseSession.Clone()
+	c := session.DB(s.Mongo.DB).C("product")
+	c.Insert(product)
+	return &response, status.Error(codes.OK, " ")
 }
 
 func (s *Server) GetProduct(ctx context.Context, req *rpcpb.GetProductRequest) (*rpcpb.GetProductResponse, error) {
-	log.Print(*req)
-	fmt.Print("hello world")
+	glog.Info(*req)
 	response := rpcpb.GetProductResponse{}
 	return &response, nil
 }
@@ -99,13 +114,13 @@ func (s *Server) CheckOrCreateUser(ctx context.Context, req *rpcpb.CheckOrCreate
 	return &response, err
 }
 
-func (s *Server) UpdateProduct(ctx context.Context, in *rpcpb.UpdateProductRequest) (*rpcpb.UpdateProductResponse, error){
+func (s *Server) UpdateProduct(ctx context.Context, in *rpcpb.UpdateProductRequest) (*rpcpb.UpdateProductResponse, error) {
 	return &rpcpb.UpdateProductResponse{}, nil
 }
 func (s *Server) GetProducts(ctx context.Context, in *rpcpb.GetProductsRequest) (*rpcpb.GetProductsResponse, error) {
 	return &rpcpb.GetProductsResponse{}, nil
 }
-func (s *Server) CreateUser(ctx context.Context, in *rpcpb.CreateUserRequest) (*rpcpb.CreateUserResponse, error){
+func (s *Server) CreateUser(ctx context.Context, in *rpcpb.CreateUserRequest) (*rpcpb.CreateUserResponse, error) {
 	return &rpcpb.CreateUserResponse{}, nil
 }
 func (s *Server) GetUser(ctx context.Context, in *rpcpb.GetUserRequest) (*rpcpb.GetUserResponse, error) {
@@ -114,9 +129,9 @@ func (s *Server) GetUser(ctx context.Context, in *rpcpb.GetUserRequest) (*rpcpb.
 func (s *Server) DeleteUser(ctx context.Context, in *rpcpb.DeleteUserRequest) (*rpcpb.DeleteUserResponse, error) {
 	return &rpcpb.DeleteUserResponse{}, nil
 }
-func (s *Server) UpdateUser(ctx context.Context, in *rpcpb.UpdateUserRequest) (*rpcpb.UpdateUserResponse, error){
+func (s *Server) UpdateUser(ctx context.Context, in *rpcpb.UpdateUserRequest) (*rpcpb.UpdateUserResponse, error) {
 	return &rpcpb.UpdateUserResponse{}, nil
 }
-func (s *Server) AuthUser(ctx context.Context, in *rpcpb.AuthUserRequest) (*rpcpb.AuthUserResponse, error){
+func (s *Server) AuthUser(ctx context.Context, in *rpcpb.AuthUserRequest) (*rpcpb.AuthUserResponse, error) {
 	return &rpcpb.AuthUserResponse{}, nil
 }

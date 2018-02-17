@@ -1,15 +1,15 @@
 package main
 
 import (
-
-	"golang.org/x/net/context"
-	"net/http"
 	"flag"
+	"net/http"
+
+	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/shuoyang2016/mywish/fe/server"
-	"github.com/golang/glog"
-	"google.golang.org/grpc"
 	rpc "github.com/shuoyang2016/mywish/rpc"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var _ server.Server
@@ -18,26 +18,6 @@ var _ glog.Level
 var (
 	echoEndpoint = flag.String("echo_endpoint", "localhost:8083", "endpoint of YourService")
 )
-
-/*
-func main() {
-	session, e := mgo.Dial(default_url);
-	if e != nil {
-		fmt.Println("Got error %v", e)
-	}
-	database := "iwish"
-	collection := "products"
-	c := session.DB(database).C(collection)
-	p := product.Product{ID: 123, Name: "foo"}
-	c.Insert(p)
-
-	//p1 := db.Product{}
-	num, err := c.Find(nil).Count()
-	if err != nil {
-		fmt.Println("The number of count is %v.", num)
-	}
-}
-*/
 
 func run() error {
 	ctx := context.Background()
