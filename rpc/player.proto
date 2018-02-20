@@ -1,9 +1,27 @@
 syntax = "proto3";
 package rpc;
 import "google/api/annotations.proto";
+import "github.com/shuoyang2016/mywish/rpc/money.proto";
 
-message player {
+message Player {
     int64 id = 1;
     string name = 2;
     string alias = 3;
+}
+
+message Bidder {
+    int64 id = 1;
+    string name = 2;
+    repeated Bid bids = 3;
+    Price total_amount = 4;
+    repeated Price pending_bids_amount = 5;
+    Price total_amount_pending = 6;
+}
+
+message Bid {
+    int64 id = 1;
+    int64 bidder_id = 2;
+    int64 buyer_id = 3;
+    int64 product_id = 4;
+    double price = 5;
 }

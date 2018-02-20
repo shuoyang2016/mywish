@@ -8,6 +8,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 var _ glog.Level
@@ -21,8 +23,8 @@ type AuthModule struct {
 	db *gorm.DB
 }
 
-func NewAuthModule() (*AuthModule, error) {
-	db, err := startDBConnection()
+func NewAuthModule(addr string) (*AuthModule, error) {
+	db, err := startDBConnection(addr)
 	if err != nil {
 		return nil, err
 	}

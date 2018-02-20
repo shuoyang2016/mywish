@@ -1,5 +1,6 @@
 syntax = "proto3";
 package rpc;
+import "github.com/shuoyang2016/mywish/rpc/money.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -20,6 +21,14 @@ message Product {
     string extra_description = 8;
     google.protobuf.Timestamp begin_time = 9;
     google.protobuf.Duration duration = 10;
+    repeated BidEntry bid_entries = 11;
+    BidEntry best_bid = 12;
+}
+
+message BidEntry {
+    int64 id = 1;
+    int64 bidder_id = 2;
+    Price price = 3;
 }
 
 message KVPair {

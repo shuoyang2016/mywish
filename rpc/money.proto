@@ -1,0 +1,13 @@
+syntax = "proto3";
+package rpc;
+import "google/api/annotations.proto";
+
+enum CurrencyType {
+    DOLLAR = 0;
+    RMB = 1;
+}
+
+message Price {
+    CurrencyType currency_type = 1;
+    double amount = 2;
+}

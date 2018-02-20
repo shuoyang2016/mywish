@@ -24,7 +24,7 @@ type UserSession struct {
 	LastSeenTime time.Time
 }
 
-func startDBConnection() (*gorm.DB, error) {
+func startDBConnection(addr string) (*gorm.DB, error) {
 	db, err := gorm.Open("mysql", "mywishtest:mywishtest@/mywishtest?parseTime=true")
 	if err != nil {
 		glog.Info("failed to connect database")

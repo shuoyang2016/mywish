@@ -1,7 +1,9 @@
 syntax = "proto3";
 package rpc;
 import "google/api/annotations.proto";
+import "github.com/shuoyang2016/mywish/rpc/money.proto";
 import "github.com/shuoyang2016/mywish/rpc/product.proto";
+import "github.com/shuoyang2016/mywish/rpc/player.proto";
 
 enum Error {
     SUCCESS = 0;
@@ -9,19 +11,20 @@ enum Error {
 }
 
 message GetProductRequest {
-    string value = 1;
+    int64 product_id = 1;
+    string product_name = 2;
 }
 
 message GetProductResponse {
-    string value = 1;
+    Product product = 1;
 }
 
 message BidProductRequest {
-
+    Bid bid = 1;
 }
 
 message BidProductResponse {
-
+    Error error = 1;
 }
 
 message BuyOutRequest {
@@ -43,19 +46,24 @@ message CreateProductResponse {
 }
 
 message GetProductsRequest {
-
+    int64 product_id = 1;
 }
 
 message GetProductsResponse {
-
+    Product product = 1;
 }
 
 message UpdateProductRequest {
-
+    int64 product_id = 1;
+    int64 request_user_id = 2;
+    Price price = 3;
+    bool is_deal_price = 4;
+    int64 bid_id = 5;
 }
 
 message UpdateProductResponse {
-
+    int64 product_id = 1;
+    int64 deal_id = 2;
 }
 
 message CheckOrCreateUserRequest {
@@ -74,12 +82,22 @@ message UpdateUserRequest {}
 message UpdateUserResponse {}
 message DeleteUserRequest {}
 message DeleteUserResponse {}
-message GetUserRequest {}
+message GetUserRequest {
+}
 message GetUserResponse {}
 message CreateUserRequest {}
 message CreateUserResponse {}
-
-
+message CreateBidderRequest {
+    int64 bidder_id = 1;
+    string bidder_name = 2;
+}
+message CreateBidderResponse {}
+message GetBidderRequest {
+    int64 bidder_id = 1;
+}
+message GetBidderResponse {}
+message UpdateBidderRequest {}
+message UpdateBidderResponse {}
 
 service MyWishService {
     // <-------- Product APIs begin ---------> //
@@ -108,10 +126,34 @@ service MyWishService {
           get: "/v1/product/list"
         };
     }
+
+    rpc BidProduct(BidProductRequest) returns (BidProductResponse) {
+        option (google.api.http) = {
+          post: "/v1/product/bid"
+          body: "*"
+        };
+    }
     // <-------- Product APIs end -----------> //
     // <-------- User APIs begin ---------> //
-    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    rpc CreateBidder(CreateBidderRequest) returns (CreateBidderResponse) {
              option (google.api.http) = {
+          post: "/v1/bidder"
+          body: "*"
+        };
+    }
+    rpc GetBidder(GetBidderRequest) returns (GetBidderResponse) {
+        option (google.api.http) = {
+          get: "/v1/bidder"
+        };
+    }
+    rpc UpdateBidder(UpdateBidderRequest) returns (UpdateBidderResponse) {
+        option (google.api.http) = {
+          put: "/v1/bidder"
+          body: "*"
+        };
+    }
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+        option (google.api.http) = {
           post: "/v1/user"
           body: "*"
         };
