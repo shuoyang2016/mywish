@@ -95,9 +95,13 @@ message CreateBidderResponse {}
 message GetBidderRequest {
     int64 bidder_id = 1;
 }
-message GetBidderResponse {}
+message GetBidderResponse {
+    Bidder bidder = 1;
+}
 message UpdateBidderRequest {}
 message UpdateBidderResponse {}
+message TestingDropRequest {}
+message TestingDropResponse {}
 
 service MyWishService {
     // <-------- Product APIs begin ---------> //
@@ -187,4 +191,12 @@ service MyWishService {
         };
     }
     // <-------- User APIs end -----------> //
+    // <-------- Testing APIs begin -----------> //
+    rpc TestingDropAll(TestingDropRequest) returns (TestingDropResponse) {
+        option (google.api.http) = {
+          post: "/v1/testing/dropall"
+          body: "*"
+        };
+    }
+    // <-------- Testing APIs end -----------> //
 }

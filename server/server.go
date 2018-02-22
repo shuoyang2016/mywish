@@ -130,7 +130,7 @@ func (s *Server) GetProduct(ctx context.Context, req *rpc.GetProductRequest) (*r
 	glog.V(3).Info(*req)
 	c := s.Mongo.BaseSession.Clone()
 	ret := rpc.GetProductResponse{Product: &rpc.Product{}}
-	err := c.DB(s.Mongo.DB).C(s.Mongo.ProductsCollection).Find(bson.M{"name": req.GetProductName()}).One(ret.GetProduct())
+	err := c.DB(s.Mongo.DB).C(s.Mongo.ProductsCollection).Find(bson.M{"id": req.GetProductId()}).One(ret.GetProduct())
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,9 @@ func (s *Server) UpdateBidder(ctx context.Context, in *rpc.UpdateBidderRequest) 
 	return &rpc.UpdateBidderResponse{}, nil
 }
 func (s *Server) GetBidder(ctx context.Context, in *rpc.GetBidderRequest) (*rpc.GetBidderResponse, error) {
-	return &rpc.GetBidderResponse{}, nil
+	newBidder := rpc.Bidder{}
+	s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).Find(bson.M{"id":in.GetBidderId()}).One(&newBidder)
+	return &rpc.GetBidderResponse{Bidder:&newBidder}, nil
 }
 func (s *Server) BidProduct(ctx context.Context, in *rpc.BidProductRequest) (*rpc.BidProductResponse, error) {
 	err := BidFlow(s, in)
@@ -188,4 +190,17 @@ func (s *Server) BidProduct(ctx context.Context, in *rpc.BidProductRequest) (*rp
 		status = rpc.Error_GENERIC_FAILURE
 	}
 	return &rpc.BidProductResponse{Error: status}, err
+}
+
+func (s *Server) TestingDropAll(ctx context.Context, in *rpc.TestingDropRequest) (*rpc.TestingDropResponse, error) {
+	var err_ret error
+	err := s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).DropCollection()
+	if err != nil {
+		err_ret = err
+	}
+	err = s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.ProductsCollection).DropCollection()
+	if err != nil {
+		err_ret = err
+	}
+	return &rpc.TestingDropResponse{}, err_ret
 }

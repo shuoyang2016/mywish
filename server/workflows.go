@@ -5,7 +5,10 @@ import (
 	"github.com/shuoyang2016/mywish/rpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"github.com/golang/glog"
 )
+
+var _ glog.Level
 
 /* Bid flow
 1. Create a bid object with bid ID, user ID, product ID.
@@ -19,13 +22,15 @@ func BidFlow(s *Server, req *rpc.BidProductRequest) error {
 	mongo := s.Mongo
 	session := mongo.BaseSession.Clone()
 	c := session.DB(s.Mongo.DB).C(mongo.PlayerSCollection)
-
 	bidder := rpc.Bidder{}
 	if err := c.Find(bson.M{"id": bid.GetBidderId()}).One(&bidder); err != nil {
 		return err
 	}
 	newBid := *bid
 	bidder.Bids = append(bidder.Bids, &newBid)
+	if bidder.GetTotalAmountPending() == nil {
+		bidder.TotalAmountPending = &rpc.Price{}
+	}
 
 	// Update bidder's money
 	newPrice := rpc.Price{Amount: bid.GetPrice()}
@@ -36,14 +41,14 @@ func BidFlow(s *Server, req *rpc.BidProductRequest) error {
 	c.Update(bson.M{"id": bid.BidderId}, &bidder)
 
 	// Update product based on new bids
-	cProduct := session.DB(mongo.DB).C(mongo.ProductsCollection)
+	c = session.DB(mongo.DB).C(mongo.ProductsCollection)
 	oldProduct := rpc.Product{}
-	if err := cProduct.Find(bson.M{"Id": bid.GetProductId()}).One(&oldProduct); err != nil {
+	if err := c.Find(bson.M{"id": bid.GetProductId()}).One(&oldProduct); err != nil {
 		return err
 	}
-	newEntry := rpc.BidEntry{Id: newBid.GetId()}
+	newEntry := rpc.BidEntry{BidderId: newBid.GetBidderId()}
 	oldProduct.BidEntries = append(oldProduct.BidEntries, &newEntry)
-	cProduct.Update(bson.M{"id": bid.GetProductId()}, oldProduct)
+	c.Update(bson.M{"id": bid.GetProductId()}, oldProduct)
 
 	return status.Error(codes.OK, " ")
 	// Create a bid object in bidder object

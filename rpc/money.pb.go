@@ -42,6 +42,8 @@ It has these top-level messages:
 	GetBidderResponse
 	UpdateBidderRequest
 	UpdateBidderResponse
+	TestingDropRequest
+	TestingDropResponse
 	Player
 	Bidder
 	Bid
