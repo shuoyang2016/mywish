@@ -11,6 +11,12 @@ message Product {
         VAGUE = 1;
         SUPRISE = 2;
     }
+    enum Status {
+        CREATED = 0;
+        BIDDING = 1;
+        PENDING = 2;
+        CLOSED = 3;
+    }
     int64 id = 1;
     string name = 2;
     Type type = 3;
@@ -21,14 +27,15 @@ message Product {
     string extra_description = 8;
     google.protobuf.Timestamp begin_time = 9;
     google.protobuf.Duration duration = 10;
-    repeated BidEntry bid_entries = 11;
-    BidEntry best_bid = 12;
-}
-
-message BidEntry {
-    int64 id = 1;
-    int64 bidder_id = 2;
-    Price price = 3;
+    repeated Bid bid_entries = 11;
+    Bid best_bid = 12;
+    Status status = 13;
+    int64 buyer_id = 14;
+    Price deal_price = 16;
+    Price final_price = 17;
+    Price bid_start_price = 18;
+    Price deposit = 19;
+    int64 final_bidder_id = 20;
 }
 
 message KVPair {

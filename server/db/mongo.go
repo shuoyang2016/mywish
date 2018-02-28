@@ -7,16 +7,16 @@ import (
 )
 
 type MongoConnection struct {
-	BaseSession         *mgo.Session
-	DB                  string
-	PlayerSCollection   string
+	BaseSession        *mgo.Session
+	DB                 string
+	PlayerSCollection  string
 	ProductsCollection string
 }
 
 type Option struct {
-	URL                 string
-	DB                  string
-	PlayerSCollection   string
+	URL                string
+	DB                 string
+	PlayerSCollection  string
 	ProductsCollection string
 }
 

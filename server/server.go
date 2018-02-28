@@ -6,6 +6,9 @@ import (
 	"net"
 	"net/http"
 
+	"strconv"
+	"time"
+
 	"github.com/globalsign/mgo/bson"
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
@@ -26,8 +29,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"strconv"
 )
+
+var _ = codes.Aborted
+var _ = status.Code
 
 func runRestService(restPort int, grpcPort int) error {
 	ctx := context.Background()
@@ -78,23 +83,31 @@ func StartServer(cfg *config.Config) chan struct{} {
 	rpc.RegisterMyWishServiceServer(s, serverIns)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
+	/*
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+	*/
+	go s.Serve(lis)
+	glog.Infof("restport is %v, grpc port is %v", cfg.RestPort, cfg.GrpcPort)
+	runRestService(cfg.RestPort, cfg.GrpcPort)
 	return serverIns.stop
 }
 
 type Server struct {
-	Config *config.Config
-	Auth   *auth.AuthModule
-	Mongo  *db.MongoConnection
-	stop   chan struct{}
+	Config              *config.Config
+	Auth                *auth.AuthModule
+	Mongo               *db.MongoConnection
+	stop                chan struct{}
+	ProductIdToTimerMap map[int64]*time.Timer // Persistent state
+	MywishAccount       string
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
 	server := Server{
-		Config: cfg,
-		stop:   make(chan struct{}),
+		Config:        cfg,
+		stop:          make(chan struct{}),
+		MywishAccount: "mywish",
 	}
 	auth_module, err := auth.NewAuthModule(cfg.SqlAddress)
 	if err != nil {
@@ -113,17 +126,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 func (s *Server) CreateProduct(ctx context.Context, req *rpc.CreateProductRequest) (*rpc.CreateProductResponse, error) {
 	glog.V(3).Info(*req)
-	product := req.NewProduct
-	response := rpc.CreateProductResponse{Status: rpc.Error_SUCCESS}
-	if product.Id == 0 || product.Name == "" {
-		response.Status = rpc.Error_GENERIC_FAILURE
-		response.Msg = "Either ID or name of the product is empty"
-		return &response, status.Error(codes.InvalidArgument, "Either ID or name of the product is empty")
-	}
-	session := s.Mongo.BaseSession.Clone()
-	c := session.DB(s.Mongo.DB).C(s.Mongo.ProductsCollection)
-	c.Insert(product)
-	return &response, status.Error(codes.OK, " ")
+	err := CreateProductFlow(s, req)
+	response := rpc.CreateProductResponse{}
+	return &response, err
 }
 
 func (s *Server) GetProduct(ctx context.Context, req *rpc.GetProductRequest) (*rpc.GetProductResponse, error) {
@@ -171,17 +176,16 @@ func (s *Server) AuthUser(ctx context.Context, in *rpc.AuthUserRequest) (*rpc.Au
 	return &rpc.AuthUserResponse{}, nil
 }
 func (s *Server) CreateBidder(ctx context.Context, in *rpc.CreateBidderRequest) (*rpc.CreateBidderResponse, error) {
-	newBidder := rpc.Bidder{Id:in.GetBidderId(), Name:in.GetBidderName()}
-	s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).Insert(&newBidder)
-	return &rpc.CreateBidderResponse{}, nil
+	err := s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).Insert(in.GetBidder())
+	return &rpc.CreateBidderResponse{}, err
 }
 func (s *Server) UpdateBidder(ctx context.Context, in *rpc.UpdateBidderRequest) (*rpc.UpdateBidderResponse, error) {
 	return &rpc.UpdateBidderResponse{}, nil
 }
 func (s *Server) GetBidder(ctx context.Context, in *rpc.GetBidderRequest) (*rpc.GetBidderResponse, error) {
 	newBidder := rpc.Bidder{}
-	s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).Find(bson.M{"id":in.GetBidderId()}).One(&newBidder)
-	return &rpc.GetBidderResponse{Bidder:&newBidder}, nil
+	s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).Find(bson.M{"id": in.GetBidderId()}).One(&newBidder)
+	return &rpc.GetBidderResponse{Bidder: &newBidder}, nil
 }
 func (s *Server) BidProduct(ctx context.Context, in *rpc.BidProductRequest) (*rpc.BidProductResponse, error) {
 	err := BidFlow(s, in)
@@ -192,7 +196,18 @@ func (s *Server) BidProduct(ctx context.Context, in *rpc.BidProductRequest) (*rp
 	return &rpc.BidProductResponse{Error: status}, err
 }
 
+func (s *Server) CloseProduct(ctx context.Context, in *rpc.CloseProductRequest) (*rpc.CloseProductResponse, error) {
+	err := CloseProductFlow(s, in)
+	return &rpc.CloseProductResponse{}, err
+}
+
+func (s *Server) PayOff(ctx context.Context, in *rpc.PayOffRequest) (*rpc.PayOffResponse, error) {
+	err := BuyProductFlow(s, in)
+	return &rpc.PayOffResponse{}, err
+}
+
 func (s *Server) TestingDropAll(ctx context.Context, in *rpc.TestingDropRequest) (*rpc.TestingDropResponse, error) {
+	glog.Info("!!!!!!!!!!!!!!!!!!!!!")
 	var err_ret error
 	err := s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).DropCollection()
 	if err != nil {

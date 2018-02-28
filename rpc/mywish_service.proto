@@ -27,20 +27,33 @@ message BidProductResponse {
     Error error = 1;
 }
 
-message BuyOutRequest {
-
+message PayOffRequest {
+    int64 product_id = 1;
+    bool take_deal_price = 2;
+    bool take_highest_bid = 3;
+    int64 bidder_id = 4; // 0 means there is no bidder.
 }
 
-message BuyOutResponse {
+message PayOffResponse {
 
 }
 
 message CreateProductRequest {
-    Product new_product = 1;
-    int64 user_id = 2;
+     Product new_product = 1;
+     int64 user_id = 2;
 }
 
 message CreateProductResponse {
+    Error status = 1;
+    string msg = 2;
+}
+
+message CloseProductRequest {
+    int64 product_id = 1;
+    int64 requester_id = 2;
+}
+
+message CloseProductResponse {
     Error status = 1;
     string msg = 2;
 }
@@ -88,8 +101,7 @@ message GetUserResponse {}
 message CreateUserRequest {}
 message CreateUserResponse {}
 message CreateBidderRequest {
-    int64 bidder_id = 1;
-    string bidder_name = 2;
+    Bidder bidder = 1;
 }
 message CreateBidderResponse {}
 message GetBidderRequest {
@@ -102,6 +114,8 @@ message UpdateBidderRequest {}
 message UpdateBidderResponse {}
 message TestingDropRequest {}
 message TestingDropResponse {}
+message BuyProductRequest {}
+message BuyProductResponse {}
 
 service MyWishService {
     // <-------- Product APIs begin ---------> //
@@ -137,7 +151,23 @@ service MyWishService {
           body: "*"
         };
     }
+    rpc PayOff(PayOffRequest) returns (PayOffResponse) {
+        option (google.api.http) = {
+          post: "/v1/product/buy"
+          body: "*"
+        };
+    }
+
+    rpc CloseProduct(CloseProductRequest) returns (CloseProductResponse) {
+        option (google.api.http) = {
+          post: "/v1/product/close"
+          body: "*"
+        };
+    }
+
+
     // <-------- Product APIs end -----------> //
+    //#########################################//
     // <-------- User APIs begin ---------> //
     rpc CreateBidder(CreateBidderRequest) returns (CreateBidderResponse) {
              option (google.api.http) = {
