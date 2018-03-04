@@ -39,7 +39,7 @@ func runRestService(restPort int, grpcPort int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	echoEndpoint := "localhost:" + string(grpcPort)
+	echoEndpoint := "localhost:" + strconv.Itoa(grpcPort)
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
@@ -83,14 +83,10 @@ func StartServer(cfg *config.Config) chan struct{} {
 	rpc.RegisterMyWishServiceServer(s, serverIns)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-	/*
+
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-	*/
-	go s.Serve(lis)
-	glog.Infof("restport is %v, grpc port is %v", cfg.RestPort, cfg.GrpcPort)
-	runRestService(cfg.RestPort, cfg.GrpcPort)
 	return serverIns.stop
 }
 
@@ -108,6 +104,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		Config:        cfg,
 		stop:          make(chan struct{}),
 		MywishAccount: "mywish",
+		ProductIdToTimerMap: make(map[int64]*time.Timer),
 	}
 	auth_module, err := auth.NewAuthModule(cfg.SqlAddress)
 	if err != nil {
@@ -207,7 +204,6 @@ func (s *Server) PayOff(ctx context.Context, in *rpc.PayOffRequest) (*rpc.PayOff
 }
 
 func (s *Server) TestingDropAll(ctx context.Context, in *rpc.TestingDropRequest) (*rpc.TestingDropResponse, error) {
-	glog.Info("!!!!!!!!!!!!!!!!!!!!!")
 	var err_ret error
 	err := s.Mongo.BaseSession.DB(s.Mongo.DB).C(s.Mongo.PlayerSCollection).DropCollection()
 	if err != nil {

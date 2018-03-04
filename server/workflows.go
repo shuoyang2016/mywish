@@ -79,7 +79,7 @@ func BidFlow(s *Server, req *rpc.BidProductRequest) error {
 		mywishBidder.TotalAmountPending.Amount -= (currentBidPrice - price) * bidderDepositPCT
 		be.Price = &rpc.Price{Amount: price}
 	} else {
-		be = &rpc.Bid{Id: 123, BidderId: bidderId, Price: &rpc.Price{Amount: price}}
+		be = &rpc.Bid{ProductId: productId, Id: 123, BidderId: bidderId, Price: &rpc.Price{Amount: price}}
 		bidder.TotalAmountPending.Amount -= price * bidderDepositPCT
 		mywishBidder.TotalAmountPending.Amount += price * bidderDepositPCT
 		bidder.PendingBids = append(bidder.PendingBids, be)
@@ -126,12 +126,12 @@ func CreateProductFlow(s *Server, req *rpc.CreateProductRequest) error {
 	}
 	deposit := basePriceForDeposit * buyerDepositPCT
 	product.Deposit = &rpc.Price{Amount: deposit}
-	if err := cb.Insert(product); err != nil {
+	if err := cp.Insert(product); err != nil {
 		return err
 	}
 
 	// 2. Add the product expiration time and add a call back to close transaction at Scheduler.
-	t := NewTimer(time.Duration(product.Duration.Seconds), func(product_id int64, s *Server) func() {
+	t := NewTimer(time.Duration(product.Duration.Seconds * time.Second.Nanoseconds()), func(product_id int64, s *Server) func() {
 		return func() {
 			req := rpc.PayOffRequest{ProductId: product_id, TakeHighestBid: true}
 			BuyProductFlow(s, &req)
@@ -141,7 +141,7 @@ func CreateProductFlow(s *Server, req *rpc.CreateProductRequest) error {
 
 	// 3. Charge buyer's deposit
 	buyer := rpc.Bidder{}
-	if err := cp.Find(bson.M{"id": product.GetBuyerId()}).One(&buyer); err != nil {
+	if err := cb.Find(bson.M{"id": product.GetBuyerId()}).One(&buyer); err != nil {
 		return err
 	}
 	buyer.ProductIdsInRequest = append(buyer.ProductIdsInRequest, product.GetId())
@@ -150,14 +150,14 @@ func CreateProductFlow(s *Server, req *rpc.CreateProductRequest) error {
 	}
 	buyer.TotalAmountPending.Amount -= deposit
 	mywishBidder := rpc.Bidder{}
-	if err := cp.Find(bson.M{"name": "mywish"}).One(&mywishBidder); err != nil {
+	if err := cb.Find(bson.M{"name": "mywish"}).One(&mywishBidder); err != nil {
 		return err
 	}
 	mywishBidder.TotalAmountPending.Amount += deposit
-	if err := cp.Update(bson.M{"id": product.GetBuyerId()}, &buyer); err != nil {
+	if err := cb.Update(bson.M{"id": product.GetBuyerId()}, &buyer); err != nil {
 		return err
 	}
-	if err := cp.Update(bson.M{"name": "mywish"}, &buyer); err != nil {
+	if err := cb.Update(bson.M{"name": "mywish"}, &mywishBidder); err != nil {
 		return err
 	}
 	return nil
@@ -178,7 +178,11 @@ func BuyProductFlow(s *Server, req *rpc.PayOffRequest) error {
 		return err
 	}
 	product.Status = rpc.Product_PENDING
-	product.FinalBidderId = req.GetBidderId()
+	if product.BestBid != nil {
+		product.FinalBidderId = product.GetBestBid().GetBidderId()
+	} else if req.GetBidderId() > 0 {
+		product.FinalBidderId = req.GetBidderId()
+	}
 	if product.FinalBidderId == 0 {
 		product.Status = rpc.Product_CLOSED
 	}
@@ -194,6 +198,9 @@ func BuyProductFlow(s *Server, req *rpc.PayOffRequest) error {
 	}
 	buyer.TotalAmountPending.Amount += deposit
 	mywishBidder.TotalAmountPending.Amount -= deposit
+	if product.FinalPrice == nil {
+		product.FinalPrice = &rpc.Price{}
+	}
 	if req.GetBidderId() == 0 {
 		product.FinalPrice.Amount = 0
 	} else if req.GetTakeDealPrice() {
@@ -204,7 +211,6 @@ func BuyProductFlow(s *Server, req *rpc.PayOffRequest) error {
 		product.FinalPrice.Amount = product.GetBestBid().GetPrice().GetAmount()
 		product.FinalBidderId = product.GetBestBid().GetBidderId()
 	}
-
 	buyer.TotalAmountPending.Amount -= product.GetFinalPrice().GetAmount()
 	mywishBidder.TotalAmountPending.Amount += product.GetFinalPrice().GetAmount()
 	if err := cb.Update(bson.M{"id": product.GetBuyerId()}, &buyer); err != nil {
@@ -221,7 +227,7 @@ func BuyProductFlow(s *Server, req *rpc.PayOffRequest) error {
 	}
 	// 3. Update the bidder for offline action.
 	finalBidder := rpc.Bidder{}
-	if err := cb.Find(bson.M{"id": product.GetFinalBidderId()}).One(&mywishBidder); err != nil {
+	if err := cb.Find(bson.M{"id": product.GetFinalBidderId()}).One(&finalBidder); err != nil {
 		return err
 	}
 	finalBidder.InShippingProductIds = append(mywishBidder.InShippingProductIds, product.GetId())
@@ -257,18 +263,20 @@ func CloseProductFlow(s *Server, req *rpc.CloseProductRequest) error {
 		return err
 	}
 	finalBidder := rpc.Bidder{}
-	if err := cb.Find(bson.M{"id": product.GetFinalBidderId()}).One(&mywishBidder); err != nil {
+	if err := cb.Find(bson.M{"id": product.GetFinalBidderId()}).One(&finalBidder); err != nil {
 		return err
 	}
 	finalPrice := product.GetFinalPrice().GetAmount()
 	finalBidder.TotalAmount.Amount += finalPrice
-	for index, be := range finalBidder.GetPendingBids() {
-		if be.GetProductId() == product.GetId() {
-			finalBidder.TotalAmountPending.Amount += finalPrice * (1 + bidderDepositPCT) // Deposit + final price
-			finalBidder.TotalAmount.Amount += finalPrice
-			finalBidder.PendingBids = append(finalBidder.PendingBids[:index], finalBidder.PendingBids[index+1:]...)
-			finalBidder.ClosedProductIds = append(finalBidder.ClosedProductIds, product.GetId())
-			break
+	if finalBidder.GetPendingBids() != nil {
+		for index, be := range finalBidder.GetPendingBids() {
+			if be.GetProductId() == product.GetId() {
+				finalBidder.TotalAmountPending.Amount += finalPrice * (1 + bidderDepositPCT) // Deposit + final price
+				finalBidder.TotalAmount.Amount += finalPrice
+				finalBidder.PendingBids = append(finalBidder.PendingBids[:index], finalBidder.PendingBids[index + 1:]...)
+				finalBidder.ClosedProductIds = append(finalBidder.ClosedProductIds, product.GetId())
+				break
+			}
 		}
 	}
 	finalBidder.TotalAmountPending.Amount -= finalPrice * (1 + bidderDepositPCT) // Transfer both deposit and sale price to bidder.
