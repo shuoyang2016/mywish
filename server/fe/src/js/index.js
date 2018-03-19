@@ -1,5 +1,7 @@
 import '../css/cover.css';
+import '../css/form.css';
 import '../css/general.css';
+import '../css/user_orders.css';
 import $ from 'jquery';
 
 

@@ -27,7 +27,18 @@ module.exports = {
     contentBase: './dist'
   },
   plugins: [
-      new HtmlWebpackPlugin({template: './src/templates/index.html'})
+      new HtmlWebpackPlugin({template: './src/templates/index.html',
+                             filename: 'index.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/product.html',
+                             filename: 'product.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/search.html',
+                             filename: 'search.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/thank_you.html',
+                             filename: 'thank_you.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/user_orders.html',
+                             filename: 'user_orders.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/user_profile.html',
+                             filename: 'user_profile.html'})
   ]
 };
 
