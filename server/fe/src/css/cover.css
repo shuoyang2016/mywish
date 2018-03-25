@@ -294,6 +294,8 @@ top: 0px;
 right: 0;
 bottom: 0px;
 left: 0;
+width: 100%;
+height: 100%;
 background-color: rgba(7, 13, 26, 1);
 border-radius: 0;
 }
@@ -306,10 +308,12 @@ left: 0;
 }
 .hc1centeredContent {
 position: absolute;
+width: 100%;
 top: 0;
 right: 0;
 bottom: 0;
 left: 0;
+height: 100%;
 }
 .txtNew {
 word-wrap: break-word;
@@ -532,11 +536,18 @@ display: block;
 cursor: url(https://static.parastorage.com/services/skins/2.1229.80/images/wysiwyg/core/themes/base/cursor_zoom_in.png), url(https://static.parastorage.com/services/skins/2.1229.80/images/wysiwyg/core/themes/base/cursor_zoom_in.cur), auto;
 }
 .wp1link {
+position: absolute;
 display: block;
 overflow: hidden;
+cursor: pointer;
+width: 61px;
+height: 100%;
 }
 .wp1img {
 overflow: hidden;
+position: absolute;
+width: 61px;
+height: 50px;
 }
 .wp1imgimage {
 position: static;
@@ -642,6 +653,7 @@ left: 0;
 }
 .pc1inlineContent {
 position: absolute;
+width: 100%;
 top: 0;
 right: 0;
 bottom: 0;
@@ -649,6 +661,7 @@ left: 0;
 }
 .pc1centeredContent {
 position: absolute;
+width: 100%;
 top: 0;
 right: 0;
 bottom: 0;
@@ -743,6 +756,8 @@ top: 0;
 right: 0;
 bottom: 0;
 left: 0;
+width: 100%;
+height: 100%;
 }
 .strc1inlineContent {
 position: absolute;
@@ -1230,18 +1245,32 @@ background: transparent url(https://static.parastorage.com/services/skins/2.1229
 height: 24px;
 width: 24px;
 }
+
+/* Site background */
 .siteBackground {
 width: 100%;
 position: absolute;
+top: 0px;
+height: 100%;
 }
-.siteBackgroundbgBeforeTransition {
+.siteBackgroundcurrent {
+top: 0px;
+background-color: rgb(247, 247, 247);
 position: absolute;
-top: 0;
+width: 100%;
+height: 100%;
 }
-.siteBackgroundbgAfterTransition {
+siteBackgroundcurrentImage {
 position: absolute;
-top: 0;
+top: 0px;
+width: 100%;
+background-size: auto;
+background-position: left top;
+background-repeat: repeat;
+height: 100%;
+background-image: url("https://static.wixstatic.com/media/65361f1a835843df8f46f809b1b05a7a.png/v1/fill/w_200,h_200,al_c/65361f1a835843df8f46f809b1b05a7a.png");
 }
+
 .loginDialog {
 position: fixed;
 width: 100%;
@@ -1475,4 +1504,87 @@ border-color: #ff0000;
 position: absolute;
 display: none;
 z-index: 2
+}
+.MasterPage {
+width: 1280px;
+position: absolute;
+top: 0px;
+left: calc(50% - 640px);
+height: 100%;
+}
+.hc1 {
+width: 100%;
+top: 0px;
+height: 98px;
+left: 0px;
+position: absolute;
+}
+.hl1{
+top: 0px;
+position: absolute;
+width: 100%;
+height: 30px;
+}
+.hl2 {
+top: 30px;
+position: absolute;
+width: 100%;
+height: 68px;
+}
+
+.hc2bg {
+position: absolute;
+width: 100%;
+height: 100%;
+background-color: rgba(7, 13, 26, 1);
+border-radius: 0;
+}
+.HeaderLogo {
+position: absolute;
+width: 100px;
+height: 68px;
+}
+.SearchBar {
+position: absolute;
+top: 15px;
+bottom: 30px;
+left: calc(50% - 350px);
+width: 700px;
+height: 70px;
+}
+.HeaderSettingsList {
+position: absolute;
+right: 0px;
+height: 100%;
+width: 300px;
+}
+.pc1 {
+position: absolute;
+top: 98px;
+height: 4254px;
+width: 100%;
+}
+.SiteContainer {
+width: 100%;
+position: absolute;
+top: 0px;
+left: 0px;
+height: 4530px;
+}
+.WantItemDiv {
+
+}
+.WantItemCategory {
+min-height: 228px;
+min-width: 980px;
+left: 0px;
+width: 100%;
+position: relative;
+top: 1350px;
+height: 400px;
+}
+.ItemsContainer {
+position: relative;
+width: 100%;
+height: 450px;
 }

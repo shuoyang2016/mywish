@@ -38,7 +38,9 @@ module.exports = {
       new HtmlWebpackPlugin({template: './src/templates/user_orders.html',
                              filename: 'user_orders.html'}),
       new HtmlWebpackPlugin({template: './src/templates/user_profile.html',
-                             filename: 'user_profile.html'})
+                             filename: 'user_profile.html'}),
+      new HtmlWebpackPlugin({template: './src/templates/create_product.html',
+                             filename: 'create_product.html'})
   ]
 };
 

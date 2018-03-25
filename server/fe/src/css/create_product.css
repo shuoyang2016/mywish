@@ -1,0 +1,8 @@
+.CreateProductContainer {
+    position: absolute;
+    top: 50px;
+    left: calc(50% - 525px);
+    width: 1050px;
+    height: 700px;
+    border: solid rgba(7, 13, 26, 1) 1px;
+}

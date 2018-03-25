@@ -2,6 +2,9 @@ import '../css/cover.css';
 import '../css/form.css';
 import '../css/general.css';
 import '../css/user_orders.css';
+import '../css/create_product.css';
+import '../css/index.css';
+import '../css/debug.css';
 import $ from 'jquery';
 
 
