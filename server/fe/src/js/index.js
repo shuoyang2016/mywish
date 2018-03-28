@@ -8,8 +8,8 @@ import '../css/debug.css';
 import $ from 'jquery';
 
 
-$('#recipeCarousel').carousel({
-  interval: 10000
+$('#carousel-womenclothes').carousel({
+  interval: 10000000
 })
 
 $('.carousel .carousel-item').each(function(){
